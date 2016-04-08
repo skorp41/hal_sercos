@@ -1,0 +1,54 @@
+component hal_sercans;
+pin in float in_x;
+pin in float in_y;
+pin in float in_z;
+pin out float out;
+
+function _;
+
+option extra_setup yes;
+option extra_cleanup yes;
+
+license "GPL";
+;;
+#include <stdint.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <stdio.h>
+
+#define SHMSZ     32
+
+struct axis {
+  int x;
+  int y;
+  int z;
+};
+
+int shmid;
+key_t key;
+struct axis *shm;
+
+EXTRA_SETUP() {
+	/* We'll name our shared memory segment "5678" */
+	key = 5678;
+
+    	/* Create the segment */
+    	shmid = shmget(key, sizeof(struct axis), IPC_CREAT | 0666);
+
+    	/* Now we attach the segment to our data space */
+    	shm = shmat(shmid, NULL, 0);
+}
+
+EXTRA_CLEANUP() {
+
+	shmdt(NULL);
+
+}
+    
+FUNCTION(_) {
+    	/* Write the desired values into shared memory */
+    	shm->x = 1000000*in_x;
+    	shm->y = 1000000*in_y;
+    	shm->z = 1000000*in_z;
+}
+   
